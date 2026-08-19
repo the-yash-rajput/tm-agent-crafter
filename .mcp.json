@@ -1,6 +1,7 @@
 {
   "mcpServers": {
     "tm-agent-crafter": {
+      "type": "http",
       "url": "${user_config.host}/api/agent-crafter/mcp",
       "headers": {
         "Authorization": "ApiKey ${user_config.api_key}"
