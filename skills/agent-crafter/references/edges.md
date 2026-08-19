@@ -10,7 +10,7 @@
 `edge_type` is `direct` or `conditional`. A `direct` edge takes `"condition_config": {}` and a
 null/empty `label`.
 
-## The three condition shapes
+## The two condition shapes
 
 `condition_config` is a tagged union: `condition_type` names the variant, and a sibling key of
 the *same name* holds its settings.
@@ -18,7 +18,6 @@ the *same name* holds its settings.
 ```json
 {"condition_type": "state_key_equals",  "state_key_equals":  {"key": "intent", "value": "refund"}}
 {"condition_type": "python_expression", "python_expression": {"expression": "state.get('score', 0) > 0.8"}}
-{"condition_type": "llm_router",        "llm_router":        {"routing_key": "next_step"}}
 ```
 
 - **`state_key_equals`** — reads `state[key]` and follows the edge whose **`value`** equals it.
@@ -27,22 +26,26 @@ the *same name* holds its settings.
 - **`python_expression`** — evaluates each edge's expression against `state` and follows the
   first one that returns truthy. Use `state.get('k', default)` rather than `state['k']`; a
   missing key raises and fails the run instead of routing.
-- **`llm_router`** — routes on a key the LLM wrote, matching against each edge's **`label`**.
-  Hidden from the frontend by default, so prefer one of the other two unless the user asks.
+
+Use these two only. `node_catalog` also lists a third type, `llm_router` — it is **not used
+here, so do not author it**, whatever the catalog reports. It is hidden from the frontend, and
+it is the one type that routes on `label`, so it behaves unlike everything else in this
+document. If you meet one in an existing agent that is what it is doing; leave it alone, or
+convert it to `state_key_equals` on the same key with a `value` per branch.
 
 ## Where the branch value lives — read this before authoring a conditional
 
-Each condition type reads a *different* field. Putting the branch value in the wrong one is the
-most common way a graph that validates cleanly still fails at runtime.
+Each condition type reads a *different* field, and neither reads `label`. Putting the branch
+value in the wrong one is the most common way a graph that validates cleanly still fails at
+runtime.
 
-| `condition_type` | Branch value read from | `label` used? |
-|---|---|---|
-| `state_key_equals` | `condition_config.state_key_equals.value`, **per edge** | no |
-| `python_expression` | `condition_config.python_expression.expression`, **per edge** | no |
-| `llm_router` | the edge's top-level `label` | **yes** |
+| `condition_type` | Branch value read from |
+|---|---|
+| `state_key_equals` | `condition_config.state_key_equals.value`, **per edge** |
+| `python_expression` | `condition_config.python_expression.expression`, **per edge** |
 
-For `state_key_equals` and `python_expression`, `label` is a caption — the canvas shows it and
-nothing routes on it. Only `llm_router` matches on `label`.
+**`label` is a caption.** The canvas shows it; nothing routes on it. Give it the same text as
+the branch value so the graph reads clearly, but changing it can never change where a run goes.
 
 ### `state_key_equals` needs a `value` on every edge
 
