@@ -1,0 +1,33 @@
+{
+  "name": "tm-agent-crafter",
+  "displayName": "TM Agent Crafter",
+  "version": "0.1.0",
+  "description": "Build, validate and run Agent Crafter LangGraph workflows by describing them in plain language.",
+  "author": {
+    "name": "Turtlemint AI"
+  },
+  "homepage": "https://github.com/the-yash-rajput/tm-agent-crafter",
+  "repository": "https://github.com/the-yash-rajput/tm-agent-crafter",
+  "license": "MIT",
+  "keywords": [
+    "langgraph",
+    "agents",
+    "workflow",
+    "agent-crafter"
+  ],
+  "userConfig": {
+    "host": {
+      "type": "string",
+      "title": "Agent Crafter host",
+      "description": "Base URL of your Agent Crafter instance, no trailing slash. e.g. http://localhost:7001",
+      "required": true
+    },
+    "api_key": {
+      "type": "string",
+      "title": "API key",
+      "description": "Your Agent Crafter API key as drm_pub_xxx.drm_sk_xxx — issue one in Django admin under API Keys. The secret is shown only once.",
+      "required": true,
+      "sensitive": true
+    }
+  }
+}

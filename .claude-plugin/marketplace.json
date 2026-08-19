@@ -1,0 +1,13 @@
+{
+  "name": "tm-agent-crafter",
+  "description": "Build and run Agent Crafter LangGraph workflows from Claude.",
+  "owner": {
+    "name": "Turtlemint AI"
+  },
+  "plugins": [
+    {
+      "name": "tm-agent-crafter",
+      "source": "."
+    }
+  ]
+}
