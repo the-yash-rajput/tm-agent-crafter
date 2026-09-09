@@ -24,9 +24,15 @@ the *same name* holds its settings.
 - **`state_key_equals`** — reads `state[key]` and follows the edge whose `label` equals that
   value. Best when an LLM emits a fixed `enum` of categories: the labels and the enum are the
   same list, so coverage is easy to eyeball.
-- **`python_expression`** — evaluates against `state` and follows the edge whose `label` matches
-  the result. Use `state.get('k', default)` rather than `state['k']`; a missing key raises and
-  fails the run instead of routing.
+  > **Top-level keys only.** The lookup is a flat `state.get(key)` — there is no dotted-path
+  > support, so `"result.verdict"` reads as empty and the run fails with "matched no branch".
+  > To route on something nested, use `python_expression`, or lift the value to a top-level key
+  > with a one-line `python_inline` node first.
+- **`python_expression`** — a **boolean per edge**, not one value matched against labels. Every
+  edge in the branch carries its own expression; they are evaluated in source order and the first
+  truthy one wins, like `if` / `elif`. The `label` is a caption here, so make the last edge's
+  expression one that always holds — if none matches, the run fails. Use
+  `state.get('k', default)` rather than `state['k']`; a missing key raises instead of routing.
 - **`llm_router`** — routes on a key the LLM wrote. Hidden from the frontend by default, so
   prefer one of the other two unless the user asks for it.
 

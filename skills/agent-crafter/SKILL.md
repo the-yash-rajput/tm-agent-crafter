@@ -1,6 +1,6 @@
 ---
 name: agent-crafter
-description: Build, edit, validate, run and debug Agent Crafter LangGraph workflow agents through the tm-agent-crafter MCP tools. Use this whenever the user wants to create an agent or workflow, add or change a node or an edge, wire up an LLM/Python/API/RAG/Kafka/RabbitMQ/document step, understand why an agent returned the wrong answer or failed a run, or copy an existing agent into a new version. Trigger on "agent crafter", "build an agent", "create a workflow", "add a node", "add a branch", "why did my agent fail", "run my agent", even when the user never says the words "agent crafter".
+description: Build, edit, validate, run and debug Agent Crafter LangGraph workflow agents through the tm-agent-crafter MCP tools. Use this whenever the user wants to create an agent or workflow, add or change a node or an edge, wire up an LLM/Python/API/RAG/Kafka/RabbitMQ/document step, collect required fields or documents from a customer over multiple turns, understand why an agent returned the wrong answer or failed a run, or copy an existing agent into a new version. Trigger on "agent crafter", "build an agent", "create a workflow", "add a node", "add a branch", "collect details until complete", "ask until I have everything", "why did my agent fail", "run my agent", even when the user never says the words "agent crafter".
 ---
 
 # Agent Crafter
@@ -28,6 +28,9 @@ So unless the request is already unambiguous, do this first:
      "none of the above" case?
    - What should happen at each ending: reply only, or a side effect (ticket, message, API call)?
    - Is it one-shot or multi-turn? Multi-turn needs an `is_session_id` key.
+   - Is anything being *gathered* — a set of fields or documents the agent chases until it has
+     them all? That is `llm_data_collection` plus a loop back, not a hand-written prompt and a
+     tally node.
    - Which steps genuinely need an LLM, and which are deterministic? Prefer `python_inline`
      wherever the logic is expressible in code — it is free, fast and cannot hallucinate.
 2. **Show the plan in plain language**, before writing any JSON: the node list with each node's
@@ -75,6 +78,7 @@ One file per node type. Read the one you are about to write:
 |---|---|---|
 | `llm` / `llm_chat` | `references/nodes/llm-chat.md` | one LLM call |
 | `llm` / `llm_agent` | `references/nodes/llm-agent.md` | tool-using agent, structured JSON output |
+| `llm` / `llm_data_collection` | `references/nodes/data-collection.md` | collect a checklist of fields/documents over multiple turns |
 | `functional` / `python_inline` | `references/nodes/python-inline.md` | sandboxed Python |
 | `functional` / `agent_call` | `references/nodes/agent-call.md` | call another agent as a sub-graph |
 | `functional` / `rag` | `references/nodes/rag.md` | retrieve from Chroma |
