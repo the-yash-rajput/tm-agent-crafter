@@ -91,8 +91,27 @@ override the lookup for that conversation.
 
 ## Troubleshooting
 
-If the tools don't appear, check that the host is reachable, your API key is active, and the
-deployment is new enough to serve the `/api/agent-crafter/mcp` route.
+If the tools don't appear, run `/mcp` first — it says whether the server was skipped outright,
+failed to connect, or connected with zero tools. Each points somewhere different:
+
+| `/mcp` shows | Cause | Fix |
+|---|---|---|
+| `tm-agent-crafter` absent, or a `"url" but no "type"` error | Plugin config is malformed | Update to v0.1.1 or later — v0.1.0 omitted `"type": "http"`, so Claude Code read the entry as a stdio server and skipped it |
+| Connection failure / 404 | Backend doesn't serve the MCP route | The deployment predates the `/api/agent-crafter/mcp` mount — check with the probe below |
+| Connected, but tools error on auth | Key revoked or wrong host | Re-issue in Django admin → API Keys; confirm the host has no trailing slash |
+
+Probe the backend directly — a 200 means the route is live:
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' -X POST "$HOST/api/agent-crafter/mcp" \
+  -H "Authorization: ApiKey $KEY" \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json, text/event-stream' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"probe","version":"1"}}}'
+```
+
+A 404 here with `/api/health_check` returning 200 means the host is fine and only the MCP mount
+is missing.
 
 ## License
 

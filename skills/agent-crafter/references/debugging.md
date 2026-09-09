@@ -25,8 +25,9 @@ Each executed node contributes `state_before` and `state_after`. Read them in or
    wrong value. That node's prompt or code is the fix — not the node that later consumed it.
 3. **Did the path stop early?** A short list plus `failed` means the last node in it raised.
 
-A node that never appears never ran. That usually means an upstream conditional matched a
-different label, so inspect the routing key in the preceding `state_after`.
+A node that never appears never ran. That usually means an upstream conditional took a
+different branch, so inspect the routing key in the preceding `state_after` and compare it
+against each edge's branch value.
 
 ## Failures you will actually hit
 
@@ -34,7 +35,9 @@ different label, so inspect the routing key in the preceding `state_after`.
 |---|---|
 | `__import__ not found` | an `import` inside a `python_inline` `run()` — see `nodes/python-inline.md` |
 | `Unsupported ... subtype` | discriminator key disagrees with `subtype` |
-| edge routing error | source produced a value no edge labels, or `state['k']` on a missing key |
+| `matched no branch (configured values: ['', ''])` | `state_key_equals` edges are missing `value` — see `edges.md` |
+| edge routing error | source produced a value no edge covers, or `state['k']` on a missing key |
+| `matched multiple branches` | two edges from one source share the same `state_key_equals.value` |
 | downstream node reads empty | the producer's `output_key` is not declared in `state_schema` |
 | whole graph fails at start | `entry_node`/`exit_nodes` name a node that does not exist — `validate_agent` catches this |
 

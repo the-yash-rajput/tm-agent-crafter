@@ -101,7 +101,7 @@ So an edge can route on it without a guard — but **not with `state_key_equals`
 does a flat `state.get(key)`; it has no dotted-path support, so a key like
 `"partner_management_queries.verdict"` reads as empty and the run fails with "matched no branch".
 
-Use `python_expression`, one boolean per edge, evaluated in order:
+Use `python_expression`, one boolean per edge, as a pair of exact negations:
 
 ```json
 {"condition_type": "python_expression"}
@@ -110,10 +110,11 @@ Use `python_expression`, one boolean per edge, evaluated in order:
 | edge → | `expression` |
 |---|---|
 | the "carry on" node | `state.get('partner_management_queries', {}).get('verdict') == 'COMPLETE'` |
-| the "ask again" node | `True` |
+| the "ask again" node | `state.get('partner_management_queries', {}).get('verdict') != 'COMPLETE'` |
 
-They are evaluated in order, first truthy wins, so the second is the else-branch. Every edge needs
-a non-empty expression and the run fails if none matches — always leave one that holds.
+Edge evaluation order is not guaranteed (see `edges.md`), so do not use a bare `True` as an
+else-branch — make the two expressions mutually exclusive so exactly one is truthy for any
+state. The run fails if none matches.
 
 If you would rather use `state_key_equals`, put a one-line `python_inline` node after the
 collector that lifts the verdict to a top-level key

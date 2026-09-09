@@ -28,10 +28,12 @@ if you pass an object the node will not behave as intended.
 
 Design the schema for the edges that follow it:
 
-- Put an **`enum`** on the routing field. The enum values become your edge `label`s, so coverage
-  is checkable by eye.
+- Put an **`enum`** on the routing field. The enum values become your edge branch values, so
+  coverage is checkable by eye. For `state_key_equals` edges that means one edge per enum value,
+  each with `state_key_equals.value` set to it — see `edges.md`, which field carries the branch
+  value depends on the condition type.
 - Always include a fallback value (`unclear`, `other`) and give it a real branch. A model will
-  emit it eventually, and an unlabelled value fails routing.
+  emit it eventually, and a value no edge covers fails routing.
 - Add `"additionalProperties": false` so the model cannot invent fields.
 - A `confidence` number lets a downstream edge demand a floor:
   `state.get('classification', {}).get('confidence', 0) >= 0.7`.
