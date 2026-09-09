@@ -23,6 +23,10 @@ the *same name* holds its settings.
 - **`state_key_equals`** — reads `state[key]` and follows the edge whose **`value`** equals it.
   Best when an LLM emits a fixed `enum` of categories: the `value`s and the enum are the same
   list, so coverage is easy to eyeball.
+  > **Top-level keys only.** The lookup is a flat `state.get(key)` — there is no dotted-path
+  > support, so `"result.verdict"` reads as empty and the run fails with "matched no branch".
+  > To route on something nested, use `python_expression`, or lift the value to a top-level key
+  > with a one-line `python_inline` node first.
 - **`python_expression`** — evaluates each edge's expression against `state` and follows the
   first one that returns truthy. Use `state.get('k', default)` rather than `state['k']`; a
   missing key raises and fails the run instead of routing.
