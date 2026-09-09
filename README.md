@@ -62,7 +62,7 @@ A single skill, `agent-crafter`, with progressive-disclosure reference files:
 | Diagnosing a failed or wrong run | `references/debugging.md` |
 | Finding, reading and writing the shared agent library | `references/library.md` |
 
-Plus one file per node type under `references/nodes/` — `llm-chat`, `llm-agent`,
+Plus one file per node type under `references/nodes/` — `llm-chat`, `llm-agent`, `data-collection`,
 `python-inline`, `agent-call`, `rag`, `api`, `rabbitmq`, `kafka`, `document-classification`,
 `document-extraction`.
 
