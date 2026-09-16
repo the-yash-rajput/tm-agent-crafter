@@ -3,7 +3,7 @@
 Build, validate and run Agent Crafter workflows by describing them to Claude in plain language.
 
 Agent Crafter models an agent as a **LangGraph workflow**: a graph of typed nodes (LLM calls,
-sandboxed Python, HTTP, RAG, Kafka/RabbitMQ publishes, document classification and extraction)
+sandboxed Python, HTTP, RAG, Kafka/RabbitMQ publishes, timed waits, document classification and extraction)
 wired together by direct and conditional edges. This plugin gives Claude the node catalog, the
 payload schema and the debugging playbook, so you can say what you want the agent to do and
 Claude authors, validates, runs and iterates on the graph for you.
@@ -63,7 +63,7 @@ A single skill, `agent-crafter`, with progressive-disclosure reference files:
 | Finding, reading and writing the shared agent library | `references/library.md` |
 
 Plus one file per node type under `references/nodes/` — `llm-chat`, `llm-agent`, `data-collection`,
-`python-inline`, `agent-call`, `rag`, `api`, `rabbitmq`, `kafka`, `document-classification`,
+`python-inline`, `agent-call`, `rag`, `wait`, `api`, `rabbitmq`, `kafka`, `document-classification`,
 `document-extraction`.
 
 The plugin also declares an MCP server (`.mcp.json`) pointing at
