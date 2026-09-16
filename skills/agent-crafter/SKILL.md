@@ -1,6 +1,6 @@
 ---
 name: agent-crafter
-description: Build, edit, validate, run and debug Agent Crafter LangGraph workflow agents through the tm-agent-crafter MCP tools. Use this whenever the user wants to create an agent or workflow, add or change a node or an edge, wire up an LLM/Python/API/RAG/Kafka/RabbitMQ/document step, collect required fields or documents from a customer over multiple turns, understand why an agent returned the wrong answer or failed a run, or copy an existing agent into a new version. Trigger on "agent crafter", "build an agent", "create a workflow", "add a node", "add a branch", "collect details until complete", "ask until I have everything", "why did my agent fail", "run my agent", even when the user never says the words "agent crafter".
+description: Build, edit, validate, run and debug Agent Crafter LangGraph workflow agents through the tm-agent-crafter MCP tools. Use this whenever the user wants to create an agent or workflow, add or change a node or an edge, wire up an LLM/Python/API/RAG/Kafka/RabbitMQ/document step, pause a workflow and pick it up later, collect required fields or documents from a customer over multiple turns, understand why an agent returned the wrong answer or failed a run, or copy an existing agent into a new version. Trigger on "agent crafter", "build an agent", "create a workflow", "add a node", "add a branch", "collect details until complete", "ask until I have everything", "wait an hour then follow up", "why did my agent fail", "run my agent", even when the user never says the words "agent crafter".
 ---
 
 # Agent Crafter
@@ -82,6 +82,7 @@ One file per node type. Read the one you are about to write:
 | `functional` / `python_inline` | `references/nodes/python-inline.md` | sandboxed Python |
 | `functional` / `agent_call` | `references/nodes/agent-call.md` | call another agent as a sub-graph |
 | `functional` / `rag` | `references/nodes/rag.md` | retrieve from Chroma |
+| `functional` / `wait` | `references/nodes/wait.md` | pause the run, resume automatically after a delay |
 | `communication` / `api` | `references/nodes/api.md` | outbound HTTP |
 | `communication` / `rabbitmq_message` | `references/nodes/rabbitmq.md` | publish to RabbitMQ |
 | `communication` / `kafka` | `references/nodes/kafka.md` | publish to Kafka |

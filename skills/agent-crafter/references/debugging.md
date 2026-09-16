@@ -9,7 +9,7 @@
 |---|---|---|
 | `success` | ran to an exit node | read the final `state_after` |
 | `failed` | a node raised | read `error`, then find the last snapshot |
-| `interrupted` | paused for a human | read `interrupt_metadata` |
+| `interrupted` | paused for a human, or parked on a `wait` node | read `interrupt_metadata` |
 | `running` / `pending` | still going — **not an error** | poll `get_run(run_id)` |
 
 `run_agent` polls until terminal or `wait_seconds` (default 60, max 600). A `running` result
@@ -40,6 +40,12 @@ against each edge's branch value.
 | `matched multiple branches` | two edges from one source share the same `state_key_equals.value` |
 | downstream node reads empty | the producer's `output_key` is not declared in `state_schema` |
 | whole graph fails at start | `entry_node`/`exit_nodes` name a node that does not exist — `validate_agent` catches this |
+
+## Parked on a wait node
+
+`interrupt_metadata.interrupt_type == "wait"` is not a failure. The run is parked until
+`resume_at` and the scheduler resumes it; `scheduled: false` means nothing will wake it —
+see `nodes/wait.md`. Don't poll for `success` and don't re-run the agent.
 
 ## Human-in-the-loop
 
