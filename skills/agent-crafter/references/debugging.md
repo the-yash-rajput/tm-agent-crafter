@@ -9,6 +9,7 @@
 |---|---|---|
 | `success` | ran to an exit node | read the final `state_after` |
 | `failed` | a node raised | read `error`, then find the last snapshot |
+| `failed`, error `Superseded by run N…` | a run parked on a `wait` that a newer turn in the session replaced. **Expected, not a bug** | nothing — see `nodes/wait.md` |
 | `interrupted` | paused for a human, or parked on a `wait` node | read `interrupt_metadata` |
 | `running` / `pending` | still going — **not an error** | poll `get_run(run_id)` |
 
@@ -38,7 +39,12 @@ against each edge's branch value.
 | `matched no branch (configured values: ['', ''])` | `state_key_equals` edges are missing `value` — see `edges.md` |
 | edge routing error | source produced a value no edge covers, or `state['k']` on a missing key |
 | `matched multiple branches` | two edges from one source share the same `state_key_equals.value` |
-| downstream node reads empty | the producer's `output_key` is not declared in `state_schema` |
+| downstream node reads empty | the producer's `output_key` differs from the key the reader uses, or the producer did not run on this path (add a `state_schema` default only if the key is legitimately read before it is written) |
+| a node's `state_before` is missing almost everything | the previous `python_inline` returned only a dict of updates. That **replaces** the state, although the producer's own `state_after` shows a merged view — see `nodes/python-inline.md` |
+| `LLM record '…' not found` | `llm_id` is a model name or a stale id. It must be the integer id of an `ACTIVE` LLM row. `validate_agent` does not check it |
+| `{{policy_number}}` renders empty | templates only expose `message` and `state` — write `{{state.policy_number}}` |
+| `No file classified as '…'` | a `document_extraction` node ran with nothing in its bucket. Guard it with `_has_classification('…')` — see `nodes/document-extraction.md` |
+| `{{state.x.y}}` empty after a `document_extraction` | extraction writes `x_1`, `x_2`, … and never a bare `x` |
 | whole graph fails at start | `entry_node`/`exit_nodes` name a node that does not exist — `validate_agent` catches this |
 
 ## Parked on a wait node
@@ -46,6 +52,12 @@ against each edge's branch value.
 `interrupt_metadata.interrupt_type == "wait"` is not a failure. The run is parked until
 `resume_at` and the scheduler resumes it; `scheduled: false` means nothing will wake it —
 see `nodes/wait.md`. Don't poll for `success` and don't re-run the agent.
+
+A message sent to the same session while a run is parked starts a new run, seeded with the parked
+run's state up to the wait. When the parked run's timer fires, it sees that newer run and settles
+as `failed` / superseded instead of resuming. Only the newest turn replies. The one exception is
+a turn that started *before* the parked run reached its wait: it does not supersede, so both
+reply.
 
 ## Human-in-the-loop
 

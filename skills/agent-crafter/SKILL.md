@@ -1,6 +1,6 @@
 ---
 name: agent-crafter
-description: Build, edit, validate, run and debug Agent Crafter LangGraph workflow agents through the tm-agent-crafter MCP tools. Use this whenever the user wants to create an agent or workflow, add or change a node or an edge, wire up an LLM/Python/API/RAG/Kafka/RabbitMQ/document step, pause a workflow and pick it up later, collect required fields or documents from a customer over multiple turns, understand why an agent returned the wrong answer or failed a run, or copy an existing agent into a new version. Trigger on "agent crafter", "build an agent", "create a workflow", "add a node", "add a branch", "collect details until complete", "ask until I have everything", "wait an hour then follow up", "why did my agent fail", "run my agent", even when the user never says the words "agent crafter".
+description: Build, edit, validate, run and debug Agent Crafter LangGraph workflow agents through the tm-agent-crafter MCP tools. Use this whenever the user wants to create an agent or workflow, add or change a node or an edge, wire up an LLM/Python/API/RAG/Kafka/RabbitMQ/document step, pause a workflow and pick it up later, collect required fields or documents from a customer over multiple turns, understand why an agent returned the wrong answer or failed a run, or copy an existing agent into a new version. Trigger on "agent crafter", "build an agent", "create a workflow", "add a node", "add a branch", "collect details until complete", "ask until I have everything", "wait an hour then follow up", "what if the customer replies during the wait", "why was my run superseded", "how does state carry between messages", "why did my agent fail", "run my agent", even when the user never says the words "agent crafter".
 ---
 
 # Agent Crafter
@@ -48,7 +48,7 @@ you after seeing something concrete.
 ## The loop
 
 1. `node_catalog()` — **always first.** Returns every node type with its real `default_config`,
-   the LLMs on this instance (you need a concrete `llm_id`), edge condition types,
+   the LLMs on this instance (`llm_id` is the LLM row's **integer id**, never a model name), edge condition types,
    `host_config_keys` for `api` nodes, Chroma collections for `rag` nodes.
 2. Check the agent library for prior art → `references/library.md`.
 3. Author the payload → `references/payload.md`, plus the per-node file for each node you add.
@@ -70,6 +70,7 @@ Read only what the task needs — these files are here so you don't carry all of
 | Envelope, `state_schema`, versioning, the key/name rules | `references/payload.md` |
 | `direct` vs `conditional`, `condition_config`, branch coverage | `references/edges.md` |
 | A run failed or answered wrong | `references/debugging.md` |
+| How state carries between messages, and a message during a `wait` | `references/payload.md` → `nodes/wait.md` |
 | Finding/reading/writing the shared agent library | `references/library.md` |
 
 One file per node type. Read the one you are about to write:
@@ -77,15 +78,15 @@ One file per node type. Read the one you are about to write:
 | Node | File | Use for |
 |---|---|---|
 | `llm` / `llm_chat` | `references/nodes/llm-chat.md` | one LLM call |
-| `llm` / `llm_agent` | `references/nodes/llm-agent.md` | tool-using agent, structured JSON output |
+| `llm` / `llm_agent` | `references/nodes/llm-agent.md` | structured JSON output (no tools; Azure only) |
 | `llm` / `llm_data_collection` | `references/nodes/data-collection.md` | collect a checklist of fields/documents over multiple turns |
 | `functional` / `python_inline` | `references/nodes/python-inline.md` | sandboxed Python |
-| `functional` / `agent_call` | `references/nodes/agent-call.md` | call another agent as a sub-graph |
+| `functional` / `agent_call` | `references/nodes/agent-call.md` | call another agent as a sub-graph (use `write_to_key`) |
 | `functional` / `rag` | `references/nodes/rag.md` | retrieve from Chroma |
 | `functional` / `wait` | `references/nodes/wait.md` | pause the run, resume automatically after a delay |
 | `communication` / `api` | `references/nodes/api.md` | outbound HTTP |
-| `communication` / `rabbitmq_message` | `references/nodes/rabbitmq.md` | publish to RabbitMQ |
-| `communication` / `kafka` | `references/nodes/kafka.md` | publish to Kafka |
+| `communication` / `rabbitmq_message` | `references/nodes/rabbitmq.md` | **stub — publishes nothing**; use `api` |
+| `communication` / `kafka` | `references/nodes/kafka.md` | **stub — publishes nothing**; use `api` |
 | `document_processing` / `document_classification` | `references/nodes/document-classification.md` | bucket uploaded files |
 | `document_processing` / `document_extraction` | `references/nodes/document-extraction.md` | pull fields out of a classified file |
 
@@ -106,5 +107,7 @@ wrong kind.
 `node_type` is also in every config and equals `type`. `llm_call` is an accepted alias for
 `type: "llm"` in older payloads; write `llm` in new work.
 
-Every node writes its result to `output_key`. Declare that key in `state_schema` or downstream
-nodes and edge conditions cannot read it.
+Every node writes its result to `output_key`, and downstream nodes and edge conditions read it
+from state directly. **Do not add node output keys to `state_schema`** — it is only for keys that
+need a default value (typically ones carried from run 1 → run 2 → run 3 in a session) and the
+`is_session_id` key. See `references/payload.md`.

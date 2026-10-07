@@ -30,6 +30,10 @@ the *same name* holds its settings.
 - **`python_expression`** — evaluates each edge's expression against `state` and follows the
   first one that returns truthy. Use `state.get('k', default)` rather than `state['k']`; a
   missing key raises and fails the run instead of routing.
+  Each expression runs in the same sandbox as `python_inline` (see `nodes/python-inline.md`), so
+  the document helpers work here: `_has_classification('FIR_COPY')`. So do its limits: the state
+  must fit in 1 MiB as JSON, and `import` is unavailable. An empty expression fails the run, and
+  `validate_agent` flags it.
 
 Use these two only. `node_catalog` also lists a third type, `llm_router` — it is **not used
 here, so do not author it**, whatever the catalog reports. It is hidden from the frontend, and

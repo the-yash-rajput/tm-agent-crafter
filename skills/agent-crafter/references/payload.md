@@ -13,7 +13,6 @@ one pass.
     "entry_node": "classify",
     "exit_nodes": ["reply"],
     "state_schema": {
-      "message":  {"type": "string",  "default": "",  "description": "user input"},
       "ticketId": {"type": "string",  "default": "",  "description": "thread key",
                    "is_session_id": true},
       "verdict":  {"type": "boolean", "default": false, "description": "result"}
@@ -38,9 +37,33 @@ read the `key` back from the `create_agent` response and address the agent by it
 
 ## state_schema
 
-Every value any node writes must be declared here. Undeclared keys are not carried through the
-graph, so downstream nodes and edge conditions read empty and the run routes wrongly — this is
-the single most common cause of a graph that validates but behaves oddly.
+**Keep it small. Do not declare every key the graph uses.** State is an open dict: whatever a
+node writes to its `output_key` is visible to every later node and edge condition without being
+listed here. `state_schema` only seeds **default values** before the first node runs.
+
+Declare a key only when:
+
+- it needs a default — a node or edge reads it before anything has written it (e.g. a counter,
+  a flag an edge checks on the first turn, a list a node appends to);
+- it is a key you want carried from run 1 → run 2 → run 3 within a session and it must exist,
+  with a sane value, on run 1 (later turns are seeded from an earlier run, below; the schema
+  covers the first one);
+- it is the `is_session_id` key.
+
+Everything else — node outputs, intermediate values — stays out.
+
+### How a later turn is seeded
+
+A new turn in a session starts from the **last snapshot `state_after` of the most recent run
+(by start time) that succeeded or is parked on a `wait`**, minus `session_id`,
+`conversation_history` and `file_details`. On top of that, the new turn's `message`, `metadata`
+and `files` win, and `state_schema` defaults fill only the keys that are still missing. So a
+default never overwrites a value carried from an earlier turn.
+
+Failed runs, runs still executing, and runs paused for any reason other than a wait are skipped,
+so seeding falls back to the run before them. A value written by a turn that later failed is
+**not** carried forward. The interplay with waits, including superseded runs and the race when
+a message arrives before a run parks, is in `nodes/wait.md`.
 
 Accepted `type` values: `string` (`str` also works), `boolean` (`bool`), `integer` (`int`),
 `float` (`number`), `list` (`array`), `dict` (`object`), `any`. Each entry takes `default`,
@@ -50,8 +73,9 @@ Mark exactly one key with `"is_session_id": true` when the agent is conversation
 key that ties turns together (a ticket id, a thread id). `conversation_history` is injected into
 state automatically for LLM nodes; you do not declare or populate it.
 
-Jinja2 reaches state from any template: `{{message}}` for a top-level key, `{{state.foo.bar}}`
-for nested access.
+Jinja2 reaches state from any template, but only through two names: `{{message}}`, and
+`{{state.<key>}}` for everything else (`{{state.foo.bar}}` for nested access). A bare
+`{{policy_number}}` renders empty without an error.
 
 ## entry_node and exit_nodes
 

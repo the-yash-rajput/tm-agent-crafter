@@ -1,13 +1,14 @@
 # `functional` / `rag`
 
-Retrieval from a ChromaDB collection.
+Answers a question from a ChromaDB collection: it retrieves the most relevant passages, then
+writes an answer grounded in them.
 
 ```json
 {"node_type": "functional", "function_type": "rag",
  "rag": {
    "collection_name": "policy_docs",
    "rag_type": "crag",
-   "llm_id": "gpt-4o",
+   "llm_id": 3,
    "filters": {},
    "top_k": 3,
    "score_threshold": null,
@@ -17,17 +18,65 @@ Retrieval from a ChromaDB collection.
 
 `collection_name` must come from `node_catalog().chroma_collections`. If that list is empty,
 Chroma is unreachable from the server — the catalog degrades rather than failing, so an empty
-list is a real signal, not a glitch. Say so instead of guessing a name.
+list is a real signal, not a glitch. Say so instead of guessing a name. The node cannot add
+documents to a collection; ingestion happens outside Agent Crafter.
 
-`input_key` names the state key holding the query; left blank the node falls back to the
-incoming message. `output_key` receives the retrieved answer — declare it in `state_schema`.
+`llm_id` is the integer id of the LLM row that writes the answer (and, for `crag`, grades the
+retrieved passages).
 
-`top_k` trades recall against prompt size. `score_threshold` (null = off) drops weak matches,
-which is what you want when "no good answer" should route differently from "here is an answer" —
-pair it with a conditional edge that checks whether `output_key` came back empty.
+## Settings
 
-`filters` is a metadata filter passed through to Chroma; leave `{}` unless the collection is
-known to carry the fields you are filtering on.
+| Key | Meaning |
+|---|---|
+| `input_key` | the state key holding the question. Blank, or a key that is empty at run time, falls back to `message` |
+| `rag_type` | `crag` (default — grades passages for relevance before answering), `selfrag` (checks its own answer against the passages), `hyde` (drafts a hypothetical answer and searches with it; helps short or vague questions) |
+| `top_k` | how many passages to retrieve. Default 3. More adds context but dilutes the answer |
+| `filters` | narrows the search, see below. `{}` searches the whole collection |
+| `score_threshold` | drops weak passages. **Only applies in `vector_id` filter mode**; ignored otherwise |
+| `output_key` | where the result goes. Default `rag_response` |
 
-`rag_type` defaults to `crag` (corrective RAG, which uses `llm_id` to grade and refine
-retrievals). The runner also reads a `mode` key for variant behaviour.
+## Filters
+
+`filters` is `{"mode": …, "value": …}`:
+
+| `mode` | `value` | Effect |
+|---|---|---|
+| absent | — | whole collection |
+| `"metadata"` | a dict, or a Jinja string that renders to JSON, e.g. `"{\"product\": \"{{state.product}}\"}"` | Chroma metadata filter. An empty value searches everything |
+| `"vector_id"` | the **name of a state key** holding a list of chunk ids | searches only those chunks, honouring `score_threshold`. A non-string value is treated as no ids |
+
+## Output
+
+```json
+{"generation": "Yes. Windshield damage is covered under the comprehensive policy, subject to …",
+ "documents": [{"id": "c-118", "page_content": "Section 3.2 Glass …", "metadata": {"section": "coverage"}}]}
+```
+
+When nothing usable is found, `generation` is the literal string `"No answer generated."`. To
+route "no answer" differently from "here is an answer", compare against that string with an
+exactly-negated pair of `python_expression` edges:
+
+```
+state.get('policy_answer', {}).get('generation') != 'No answer generated.'
+state.get('policy_answer', {}).get('generation') == 'No answer generated.'
+```
+
+## Worked example: policy coverage question
+
+Customer: `"does my policy cover a cracked windshield??"`. A first `llm_chat` node rewrites
+the message into a clean question and saves it as `rewritten_question`. Then:
+
+```json
+{"name": "search_wordings", "type": "functional", "subtype": "rag",
+ "config": {"node_type": "functional", "function_type": "rag",
+            "rag": {"collection_name": "motor_policy_wordings", "rag_type": "crag", "llm_id": 3,
+                    "filters": {"mode": "metadata", "value": {"product": "motor_comprehensive"}},
+                    "top_k": 5, "score_threshold": null,
+                    "input_key": "rewritten_question", "output_key": "policy_answer"}}}
+```
+
+State after:
+`policy_answer: {"generation": "Yes — glass damage is covered …", "documents": [ … 5 passages … ]}`.
+A final `llm_chat` turns it into a friendly reply with
+`{{state.policy_answer.generation}}` in its `user_prompt_template`. Feeding RAG the rewritten
+question rather than the raw chat text is what makes retrieval reliable.
