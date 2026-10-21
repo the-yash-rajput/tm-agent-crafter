@@ -97,3 +97,20 @@ marked `is_locked` rejects edits entirely.
 
 Bump `patch` for a prompt tweak, `minor` for new nodes or branches, `major` when the state
 contract changes in a way callers would notice.
+
+### Large payloads: import from a file
+
+`update_agent` takes the whole payload inline, so a big agent (hundreds of KB of node code)
+cannot go through it. Use the backend import route from a file instead. It follows the same rules
+(a strictly higher semver, no duplicates, lineage through `from`):
+
+```
+bash ${CLAUDE_PLUGIN_ROOT}/scripts/import_version.sh <key> <new_version> <from_version> <payload.json>
+```
+
+It POSTs `{version_number, created_from_version_number, payload}` to
+`<host>/api/agent-crafter/agents/<key>/versions/import` with `Authorization: ApiKey`, and sets
+`payload.version.version_number` to `<new_version>`. It needs `CRAFTER_HOST` and
+`CRAFTER_API_KEY` in the environment (the same host and key as the plugin config). Without them
+it exits 2, so ask the user to set them, e.g. `! export CRAFTER_HOST=… CRAFTER_API_KEY=…`. Then
+`validate_agent(key, <new_version>)` as usual.

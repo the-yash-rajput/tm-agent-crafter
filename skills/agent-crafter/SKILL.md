@@ -61,6 +61,11 @@ you after seeing something concrete.
 Editing: `get_agent(key)` → edit the JSON → `update_agent(key, "1.1.0", edited)`. Versions are
 immutable; you never edit one in place, you create the next at a higher semver.
 
+Large agent (the `get_agent` result is saved to a file instead of shown inline)? Don't push it
+through `update_agent`; it won't fit. Edit the saved JSON with `jq` or a script, write it to a
+file, then run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/import_version.sh <key> <new> <from> <file>`.
+See `references/payload.md` → Large payloads.
+
 ## Where to look things up
 
 Read only what the task needs — these files are here so you don't carry all of it at once.
