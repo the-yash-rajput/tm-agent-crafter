@@ -1,7 +1,10 @@
 # `communication` / `rabbitmq_message`
 
-Publishes a message to RabbitMQ. Fire-and-forget side effect; the publish result lands in
-`output_key`.
+> **Not implemented: this node publishes nothing.** The runner is a stub. It renders the payload,
+> writes a receipt to `output_key` and logs `rabbitmq_message_noop … (stub — not published)`.
+> `host`, `port` and `exchange` are never used to connect. Do not use it for anything that must
+> reach another system. Use an `api` node to an allowlisted host instead, and tell the user the
+> message they asked for will not actually be sent.
 
 ```json
 {"node_type": "communication", "communication_type": "rabbitmq_message",
@@ -16,16 +19,23 @@ Publishes a message to RabbitMQ. Fire-and-forget side effect; the publish result
 ```
 
 `communication_type` must be `rabbitmq_message`; the sibling `api` and `kafka` sub-dicts stay at
-their defaults.
+their defaults. The node is hidden from the frontend (`show_in_frontend: false`), so it only
+turns up in imported or API-authored payloads.
 
-Publish either to an `exchange` with a `routing_key`, or directly to a `queue` — set the pair you
-actually use and leave the other empty. Getting this wrong publishes successfully into nowhere,
-which looks like success in `state_snapshots`.
+This is unrelated to how agents are *invoked* over RabbitMQ: the ticket integrations that run
+agents and receive their replies over queues work fine. Only this node, publishing from inside a
+graph, is a stub.
 
-`payload_template` is Jinja2 and must render to valid JSON. Pipe every interpolated value through
-`| tojson` — it quotes and escapes correctly, whereas bare `{{...}}` breaks the moment a value
-contains a quote, newline or non-ASCII character.
+## What it writes
 
-This node is hidden from the frontend by default (`show_in_frontend: false`), so it appears in
-payloads more often than in the UI. Like any side-effect node, place it after the decision that
-justifies it — a published message cannot be recalled by fixing an edge.
+With `ticketId: "T-1001"` and `classification.category: "refund"`, the node adds:
+
+```json
+{"rabbitmq_result": {"status": "queued_locally", "transport": "rabbitmq_message",
+                     "target": "payout.classified",
+                     "payload": {"ticketId": "T-1001", "category": "refund"}}}
+```
+
+`target` is the first non-empty of `routing_key`, `queue`, `exchange`. `status:
+"queued_locally"` is constant. It does not mean anything was queued anywhere. A run that
+"published" through this node and succeeded has still sent nothing.

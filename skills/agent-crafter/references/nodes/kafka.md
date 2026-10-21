@@ -1,6 +1,10 @@
 # `communication` / `kafka`
 
-Publishes a message to a Kafka topic. Side effect; the result lands in `output_key`.
+> **Not implemented: this node publishes nothing.** The runner is a stub. It renders the key and
+> payload, writes a receipt to `output_key` and logs `kafka_noop … (stub — not published)`. No
+> broker is contacted, and `bootstrap_servers` is never read. Do not use it for anything that must
+> reach another system. Use an `api` node to an allowlisted host instead, and tell the user the
+> event they asked for will not actually be emitted.
 
 ```json
 {"node_type": "communication", "communication_type": "kafka",
@@ -13,14 +17,22 @@ Publishes a message to a Kafka topic. Side effect; the result lands in `output_k
 ```
 
 `communication_type` must be `kafka`; leave the sibling `api` and `rabbitmq_message` sub-dicts at
-their defaults.
+their defaults. The node is hidden from the frontend (`show_in_frontend: false`), so it only
+turns up in imported or API-authored payloads.
 
-`key_template` sets the partition key. Setting it to a stable identity — a ticket id, a user id —
-keeps all events for that entity on one partition and therefore in order. Leave it empty only
-when ordering genuinely does not matter.
+## What it writes
 
-`payload_template` is Jinja2 and must render to valid JSON. Pipe interpolated values through
-`| tojson` so quotes, newlines and unicode cannot produce a malformed message.
+With `ticketId: "T-1001"` and `classification.category: "refund"`, the node adds:
 
-Hidden from the frontend by default (`show_in_frontend: false`). As with every side-effect node,
-place it downstream of the decision that justifies emitting the event.
+```json
+{"kafka_result": {"status": "queued_locally", "transport": "kafka",
+                  "target": "payout.events:T-1001",
+                  "payload": {"ticketId": "T-1001", "status": "refund"}}}
+```
+
+`target` is `topic:key`, or just `topic` when `key_template` renders empty. `status:
+"queued_locally"` is constant. It does not mean anything was queued anywhere. A run that
+"published" through this node and succeeded has still sent nothing.
+
+If an existing agent relies on this node, say so when you debug it. The fix is a real transport
+(an `api` node), not a change to this config.
