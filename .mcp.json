@@ -1,10 +1,12 @@
 {
   "mcpServers": {
     "tm-agent-crafter": {
-      "type": "http",
-      "url": "${user_config.host}/api/agent-crafter/mcp",
-      "headers": {
-        "Authorization": "ApiKey ${user_config.api_key}"
+      "type": "stdio",
+      "command": "python3",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/crafter_proxy.py"],
+      "env": {
+        "CRAFTER_HOST": "${user_config.host}",
+        "CRAFTER_API_KEY": "${user_config.api_key}"
       }
     }
   }

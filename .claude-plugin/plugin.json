@@ -1,7 +1,7 @@
 {
   "name": "tm-agent-crafter",
   "displayName": "TM Agent Crafter",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "description": "Build, validate and run Agent Crafter LangGraph workflows by describing them in plain language.",
   "author": {
     "name": "Turtlemint AI"
@@ -19,14 +19,14 @@
     "host": {
       "type": "string",
       "title": "Agent Crafter host",
-      "description": "Base URL of your Agent Crafter instance, no trailing slash. e.g. the deployed DRM host, or http://localhost:7002 locally (MCP runs on its own port, not the REST port 7001)",
-      "required": true
+      "description": "Base URL of your Agent Crafter instance, no trailing slash. e.g. the deployed DRM host, or http://localhost:7002 locally (MCP runs on its own port, not the REST port 7001). Optional: becomes the fallback when no workspace is set — add more with /crafter-workspace add",
+      "required": false
     },
     "api_key": {
       "type": "string",
       "title": "API key",
       "description": "Your Agent Crafter API key as drm_pub_xxx.drm_sk_xxx — issue one in Django admin under API Keys. The secret is shown only once.",
-      "required": true,
+      "required": false,
       "sensitive": true
     }
   }

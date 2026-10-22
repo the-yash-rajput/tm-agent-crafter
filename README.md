@@ -11,7 +11,8 @@ Claude authors, validates, runs and iterates on the graph for you.
 ## Requirements
 
 This plugin is a client. It talks to an **Agent Crafter backend** over MCP, and does nothing on
-its own — you need a reachable instance before installing.
+its own — you need a reachable instance before installing. It also needs `python3` on your `PATH`
+(stdlib only, no packages): the MCP server is a small local proxy so you can switch workspaces.
 
 ## Install
 
@@ -43,6 +44,30 @@ reveal screen, and is never recoverable afterwards. Revoke by unticking `is_acti
 
 > API keys are global-scope: any valid key can read and write **every** agent on that instance.
 > Use a separate key per person so you can revoke one without disrupting others.
+
+## Workspaces
+
+A workspace is one Agent Crafter environment: a host plus the API key it gave you. Keep as many as
+you like (local, staging, prod) and switch between them like `/model`. No restart needed: the
+next tool call goes to the new one.
+
+```
+/crafter-workspace                           list them, * marks the active one
+/crafter-workspace <name>                    switch
+/crafter-workspace add <url> <api_key> [name]
+/crafter-workspace remove <name>
+```
+
+`name` defaults to the URL's hostname (`http://localhost:7002` → `localhost`). The first workspace
+you add becomes active. They're stored in `~/.config/tm-agent-crafter/workspaces.json` (mode 600),
+never in the repo.
+
+> A key typed into `/crafter-workspace add` stays in that chat's transcript. To keep it out, run
+> the script yourself and paste the key at the hidden prompt:
+> `! python3 <plugin dir>/scripts/crafter_workspace.py add <url> [name]`
+
+The host and key from the install prompt are optional now. They're used only when no workspace is
+set, so existing installs keep working as they are.
 
 ## Use
 
@@ -103,6 +128,7 @@ failed to connect, or connected with zero tools. Each points somewhere different
 |---|---|---|
 | `tm-agent-crafter` absent, or a `"url" but no "type"` error | Plugin config is malformed | Update to v0.1.1 or later — v0.1.0 omitted `"type": "http"`, so Claude Code read the entry as a stdio server and skipped it |
 | Connection failure / 404 | Backend doesn't serve the MCP route | The ingress doesn't route `/api/agent-crafter/mcp` to the MCP port (7002), the deployment predates the mount, or locally you pointed at `:7001` — check with the probe below |
+| Tools error right after a switch | The active workspace is down, or its key is wrong | `/crafter-workspace` to see which one is active; the error names it and its host |
 | Connected, but tools error on auth | Key revoked or wrong host | Re-issue in Django admin → API Keys; confirm the host has no trailing slash |
 
 Probe the backend directly — a 200 means the route is live:
