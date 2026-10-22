@@ -55,7 +55,8 @@ you after seeing something concrete.
 4. `create_agent(payload)` → read the returned `key`. The key is regenerated from the name, so
    whatever you put in the payload is ignored. Status is always `draft`.
 5. `validate_agent(key)` → fix `errors`, repeat. Costs no LLM tokens, so run it every time.
-6. `run_agent(key, message="...")` → returns `status` and `state_snapshots`.
+6. `run_agent(key, message="...")` → returns `status` and `state_snapshots`. `status: "busy"`
+   means the server is at its run cap and started nothing: wait `retry_after_seconds` and retry.
 7. Save the payload back to the library.
 
 Editing: `get_agent(key)` → edit the JSON → `update_agent(key, "1.1.0", edited)`. Versions are

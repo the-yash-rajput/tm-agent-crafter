@@ -1,7 +1,7 @@
 {
   "name": "tm-agent-crafter",
   "displayName": "TM Agent Crafter",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Build, validate and run Agent Crafter LangGraph workflows by describing them in plain language.",
   "author": {
     "name": "Turtlemint AI"
@@ -19,7 +19,7 @@
     "host": {
       "type": "string",
       "title": "Agent Crafter host",
-      "description": "Base URL of your Agent Crafter instance, no trailing slash. e.g. http://localhost:7001",
+      "description": "Base URL of your Agent Crafter instance, no trailing slash. e.g. the deployed DRM host, or http://localhost:7002 locally (MCP runs on its own port, not the REST port 7001)",
       "required": true
     },
     "api_key": {

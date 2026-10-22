@@ -30,8 +30,13 @@ Claude Code then prompts for two values, stored per-user and never committed:
 
 | Field | Value |
 |---|---|
-| **Agent Crafter host** | Base URL of your instance, no trailing slash — e.g. `http://localhost:7001` |
+| **Agent Crafter host** | Base URL of your instance, no trailing slash — the deployed DRM host, or `http://localhost:7002` locally |
 | **API key** | `drm_pub_….drm_sk_…` |
+
+The backend serves MCP from its own process on port **7002**, separate from the REST API on
+7001. A deployed host routes `/api/agent-crafter/mcp` to 7002 at the ingress, so one base URL
+covers both. Locally they differ: the plugin host is `:7002`, while `CRAFTER_HOST` for
+`scripts/import_version.sh` (a REST call) is `:7001`.
 
 Issue a key in the backend's Django admin → **API Keys** → Add. The secret is shown once, on the
 reveal screen, and is never recoverable afterwards. Revoke by unticking `is_active`.
@@ -97,7 +102,7 @@ failed to connect, or connected with zero tools. Each points somewhere different
 | `/mcp` shows | Cause | Fix |
 |---|---|---|
 | `tm-agent-crafter` absent, or a `"url" but no "type"` error | Plugin config is malformed | Update to v0.1.1 or later — v0.1.0 omitted `"type": "http"`, so Claude Code read the entry as a stdio server and skipped it |
-| Connection failure / 404 | Backend doesn't serve the MCP route | The deployment predates the `/api/agent-crafter/mcp` mount — check with the probe below |
+| Connection failure / 404 | Backend doesn't serve the MCP route | The ingress doesn't route `/api/agent-crafter/mcp` to the MCP port (7002), the deployment predates the mount, or locally you pointed at `:7001` — check with the probe below |
 | Connected, but tools error on auth | Key revoked or wrong host | Re-issue in Django admin → API Keys; confirm the host has no trailing slash |
 
 Probe the backend directly — a 200 means the route is live:
@@ -110,8 +115,8 @@ curl -s -o /dev/null -w '%{http_code}\n' -X POST "$HOST/api/agent-crafter/mcp" \
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"probe","version":"1"}}}'
 ```
 
-A 404 here with `/api/health_check` returning 200 means the host is fine and only the MCP mount
-is missing.
+A 404 here with `/api/health_check` returning 200 means the host is fine but the request landed
+on the REST process (7001): the MCP route isn't reaching port 7002.
 
 ## License
 

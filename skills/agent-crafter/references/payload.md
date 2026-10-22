@@ -111,6 +111,7 @@ bash ${CLAUDE_PLUGIN_ROOT}/scripts/import_version.sh <key> <new_version> <from_v
 It POSTs `{version_number, created_from_version_number, payload}` to
 `<host>/api/agent-crafter/agents/<key>/versions/import` with `Authorization: ApiKey`, and sets
 `payload.version.version_number` to `<new_version>`. It needs `CRAFTER_HOST` and
-`CRAFTER_API_KEY` in the environment (the same host and key as the plugin config). Without them
+`CRAFTER_API_KEY` in the environment (the same key as the plugin config, and the same host
+when deployed; locally it is the REST port `:7001`, not the MCP port `:7002`). Without them
 it exits 2, so ask the user to set them, e.g. `! export CRAFTER_HOST=… CRAFTER_API_KEY=…`. Then
 `validate_agent(key, <new_version>)` as usual.

@@ -12,6 +12,7 @@
 | `failed`, error `Superseded by run N…` | a run parked on a `wait` that a newer turn in the session replaced. **Expected, not a bug** | nothing — see `nodes/wait.md` |
 | `interrupted` | paused for a human, or parked on a `wait` node | read `interrupt_metadata` |
 | `running` / `pending` | still going — **not an error** | poll `get_run(run_id)` |
+| `busy` (no `run_id`) | too many runs in flight on the server; nothing was started | wait `retry_after_seconds`, then call `run_agent` again. Don't fire runs in parallel |
 
 `run_agent` polls until terminal or `wait_seconds` (default 60, max 600). A `running` result
 just means the run outlived the wait, so raise `wait_seconds` for slow graphs or poll.
