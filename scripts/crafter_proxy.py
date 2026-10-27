@@ -21,6 +21,9 @@ import crafter_workspace
 
 MCP_PATH = "/api/agent-crafter/mcp"
 TIMEOUT_S = 600  # run_agent waits on real LLM calls
+# Claude Code gives up on a server whose initialize takes ~30s, and then shows only "-32000".
+# Failing sooner lets the real reason (host unreachable, VPN off) reach the log and the error.
+CONNECT_TIMEOUT_S = 5  # per socket step; a dead host takes ~2x this in all
 
 
 def log(msg: str) -> None:
@@ -59,7 +62,7 @@ class Proxy:
         self.session_id: str | None = None
         self.protocol: str | None = None
 
-    def post(self, host: str, key: str, msg: dict) -> list[dict]:
+    def post(self, host: str, key: str, msg: dict, timeout: float = TIMEOUT_S) -> list[dict]:
         headers = {
             "Authorization": f"ApiKey {key}",
             "Content-Type": "application/json",
@@ -70,13 +73,13 @@ class Proxy:
         if self.protocol:
             headers["MCP-Protocol-Version"] = self.protocol
         req = urllib.request.Request(host + MCP_PATH, json.dumps(msg).encode(), headers, method="POST")
-        with urllib.request.urlopen(req, timeout=TIMEOUT_S) as resp:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
             self.session_id = resp.headers.get("Mcp-Session-Id") or self.session_id
             return parse_body(resp.headers.get("Content-Type", ""), resp.read().decode())
 
     def initialize(self, host: str, key: str) -> list[dict]:
         self.session_id = self.protocol = None
-        replies = self.post(host, key, self.init_msg)
+        replies = self.post(host, key, self.init_msg, CONNECT_TIMEOUT_S)
         self.protocol = next((r["result"].get("protocolVersion") for r in replies if "result" in r), None)
         self.connected = (host, key)
         return replies
@@ -84,7 +87,7 @@ class Proxy:
     def connect(self, host: str, key: str) -> None:
         """Open a fresh session on host by replaying the client's initialize."""
         self.initialize(host, key)
-        self.post(host, key, {"jsonrpc": "2.0", "method": "notifications/initialized"})
+        self.post(host, key, {"jsonrpc": "2.0", "method": "notifications/initialized"}, CONNECT_TIMEOUT_S)
 
     def handle(self, msg: dict) -> list[dict]:
         ws = target()
@@ -112,7 +115,7 @@ class Proxy:
             detail = e.read().decode(errors="replace")[:300]
             raise RuntimeError(f"Workspace '{name}' ({host}) returned HTTP {e.code}: {detail}") from e
         except (urllib.error.URLError, OSError) as e:
-            raise RuntimeError(f"Workspace '{name}' ({host}) unreachable: {e}") from e
+            raise RuntimeError(f"Workspace '{name}' ({host}) unreachable: {e}. On VPN? Switch with /crafter-workspace <name>.") from e
 
 
 def main() -> None:
